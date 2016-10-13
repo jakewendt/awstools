@@ -49,7 +49,9 @@ function usage(){
 #	image_id="ami-d35494b3"	#	HERV 8
 #	image_id="ami-d05595b0"	#	HERV 9
 #	image_id="ami-e227e482"	#	HERV 10
-image_id="ami-665f9006"	#	HERV 11
+#	image_id="ami-665f9006"	#	HERV 11
+
+
 instance_type="t2.micro"
 #instance_type="t2.medium"
 key="~/.aws/KEYNAME.pem"
@@ -91,6 +93,15 @@ while [ $# -ne 0 ] ; do
 			break ;;
 	esac
 done
+
+
+echo $image_id
+#	Get MY most RECENT, non-WINDOWs AMI image_id
+[ -z "${image_id}" ] && image_id=`aws --profile ${profile} ec2 describe-images --owners self | jq '.Images | sort_by(.CreationDate) | select("Platform" != "windows")[].ImageId' | tail -1 | tr -d '"'`
+
+echo $image_id
+
+
 
 #       Basically, this is TRUE AND DO ...
 [ $# -ne 0 ] && usage
