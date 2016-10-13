@@ -1,9 +1,10 @@
-# aws_scripts
+# aws
 
 
 ##	Requirements
 
-awscli and jq installed
+[awscli](https://aws.amazon.com/cli/) and [jq](https://github.com/stedolan/jq) installed
+
 
 
 
