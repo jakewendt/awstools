@@ -15,8 +15,8 @@ function usage(){
 	echo
 	echo "Defaults:"
 	echo
-	echo " image_id ....... ${image_id}"
-	echo " instance_type .. ${instance_type}"
+	echo " image-id ....... ${image_id}"
+	echo " instance-type .. ${instance_type}"
 	echo " key ............ ${key} (the key and file base name NEED to be the same)"
 	echo " volume-size .... Default Image Volume Size"
 	echo " count .......... ${count}"
@@ -275,12 +275,19 @@ echo $instance_ids
 #    "Reservations": []
 #}
 
-
+echo "--------------------------------------------------"
+echo
+echo "In a moment, an IP address will be assigned."
+echo "Acquire it by running the following command ..."
+echo
 command="aws --profile $profile ec2 describe-instances
 	--query 'Reservations[0].Instances[].PublicIpAddress'
 	--instance-ids $instance_ids"
 echo
 echo $command
+echo
+echo "Shortly thereafter, the instance will be available."
+echo "Connect to it like the following command, replacing the #.#.#.# with the acquired IP address."
 echo
 echo "ssh -i ${key} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ec2-user@#.#.#.#"
 echo
