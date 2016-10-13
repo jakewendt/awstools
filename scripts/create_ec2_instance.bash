@@ -94,13 +94,8 @@ while [ $# -ne 0 ] ; do
 	esac
 done
 
-
-echo $image_id
 #	Get MY most RECENT, non-WINDOWs AMI image_id
 [ -z "${image_id}" ] && image_id=`aws --profile ${profile} ec2 describe-images --owners self | jq '.Images | sort_by(.CreationDate) | map(select(.Platform != "windows"))[].ImageId' | tail -1 | tr -d '"'`
-
-echo $image_id
-
 
 
 #       Basically, this is TRUE AND DO ...
