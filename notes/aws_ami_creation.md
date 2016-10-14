@@ -546,7 +546,7 @@ Update the basic yum installed packages and add a few needed for compiling samto
 
 ```BASH
 sudo yum update
-sudo yum install gcc ncurses-devel zlib-devel git mysql expat-devel
+sudo yum install gcc ncurses-devel zlib-devel git mysql expat-devel xauth
 ```
 
 MAY need to install the aws client package.

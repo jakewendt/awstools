@@ -291,6 +291,10 @@ echo "Connect to it like the following command, replacing the #.#.#.# with the a
 echo
 echo "ssh -i ${key} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ec2-user@#.#.#.#"
 echo
+echo " ... if using MatLab or other X11 windowing software, you'll need the -X option ..."
+echo
+echo "ssh -X -i ${key} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ec2-user@#.#.#.#"
+echo
 
 
 
