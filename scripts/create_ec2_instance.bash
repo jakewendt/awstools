@@ -8,7 +8,7 @@ function usage(){
 	echo
 	echo "Usage: (NO EQUALS SIGNS)"
 	echo
-	echo "`basename $0` [--profile STRING] [--image-id AMI] [--instance-type AMITYPE] [--key KEY_WITH_PATH] [--user-data USERDATAFILE] [--volume-size INTEGER] [--count INTEGER] [--NOT-DRY-RUN]"
+	echo "`basename $0` [--profile STRING] [--region STRING] [--image-id AMI] [--instance-type AMITYPE] [--key KEY_WITH_PATH] [--user-data USERDATAFILE] [--volume-size INTEGER] [--count INTEGER] [--NOT-DRY-RUN]"
 	echo
 	echo "--NOT-DRY-RUN is a boolean flag to ACTUALLY start instance (without, does not)"
 	echo
@@ -23,6 +23,7 @@ function usage(){
 	echo " volume-size .... Default Image Volume Size"
 	echo " count .......... ${count}"
 	echo " profile ........ ${profile}"
+	echo " region ......... ${region}"
 	echo
 	echo "Key Pairs can easily be create like ..."
 	echo "aws ec2 create-key-pair --key-name KEYNAME --query 'KeyMaterial' --output text > ~/.aws/KEYNAME.pem"
@@ -63,7 +64,8 @@ dry_run="--dry-run"
 user_data=""
 block=""	#	for the volume size
 count=1
-profile="default"	#	placeholder to user option
+region=""
+profile=""
 
 while [ $# -ne 0 ] ; do
 	#	Options MUST start with - or --.
@@ -81,7 +83,9 @@ while [ $# -ne 0 ] ; do
 		-u*|--u*)
 			shift; user_data="--user-data file://$1"; shift ;;
 		-p*|--p*)
-			shift; profile=$1; shift ;;
+			shift; profile="--profile $1"; shift ;;
+		-r*|--r*)
+			shift; region="--region $1"; shift ;;
 		-v*|--v*)
 			shift; block="--block-device-mappings DeviceName=/dev/xvda,Ebs={VolumeSize=${1},VolumeType=gp2}"; shift ;;
 #          VirtualName=string,DeviceName=string,Ebs={SnapshotId=string,VolumeSize=integer,DeleteOnTermination=boolean,VolumeType=string,Iops=integer,Encrypted=boolean},NoDevice=string ...
@@ -100,7 +104,7 @@ done
 if [ -z "${image_id}" ]; then
 	echo "No image id provided."
 	echo "Searching for your most recent non-Windows AMI image id ..."
-	image_id=`aws --profile ${profile} ec2 describe-images --owners self | jq '.Images |
+	image_id=`aws ${profile} ${region} ec2 describe-images --owners self | jq '.Images |
 		sort_by(.CreationDate) |
 		map(select(.Platform != "windows"))[].ImageId' | tail -1 | tr -d '"'`
 	[ -z "${image_id}" ] && echo "None found." || echo "Found $image_id"
@@ -109,7 +113,7 @@ fi
 if [ -z "${image_id}" ]; then
 	echo "Did not find an image id of yours."
 	echo "Searching for most recent non-Windows, EBS, HVM, GP2, Amazon AMI ..."
-	image_id=`aws ec2 describe-images --owners amazon | jq '.Images |
+	image_id=`aws ${profile} ${region} ec2 describe-images --owners amazon | jq '.Images |
 		map(select(.Platform != "windows")) |
 		map(select(.ImageType == "machine")) |
 		map(select(.VirtualizationType == "hvm")) |
@@ -128,7 +132,7 @@ if [ -z "${image_id}" ]; then
 	fi
 fi
 
-aws ec2 describe-images --image-id $image_id
+aws ${profile} ${region} ec2 describe-images --image-id $image_id
 
 
 #       Basically, this is TRUE AND DO ...
@@ -147,7 +151,7 @@ key_name=${key_name##*/}	#	drop the longest prefix match to "*/" (the path)
 #	sort by AvailableIpAddressCount?
 
 #	This should return that with the MOST available.
-subnets=`aws --profile $profile ec2 describe-subnets`
+subnets=`aws $profile $region ec2 describe-subnets`
 echo $subnets
 #aws --profile $profile ec2 describe-subnets
 #{
@@ -256,26 +260,26 @@ echo $subnet_id
 #}
 
 
-vpcid=`aws --profile $profile ec2 describe-vpcs --filters "Name=isDefault,Values=true" | jq '.Vpcs[].VpcId' | tr -d '"'`
+vpcid=`aws $profile $region ec2 describe-vpcs --filters "Name=isDefault,Values=true" | jq '.Vpcs[].VpcId' | tr -d '"'`
 
 echo "VPC ID: ${vpcid}"
 
-sg=`aws --profile $profile ec2 describe-security-groups --filters "Name=vpc-id,Values=$vpcid,Name=description,Values=default VPC security group"`
+sg=`aws $profile $region ec2 describe-security-groups --filters "Name=vpc-id,Values=$vpcid,Name=description,Values=default VPC security group"`
 sgid=`echo $sg | jq '.SecurityGroups[].GroupId' | tr -d '"'`
 echo "Security Group Id: ${sgid}"
 
 echo "Checking for existing ssh access"
-ssh_access=`aws --profile $profile ec2 describe-security-groups --group-id ${sgid} --filters Name=group-name,Values=default Name=ip-permission.protocol,Values=tcp Name=ip-permission.from-port,Values=22 Name=ip-permission.to-port,Values=22 Name=ip-permission.cidr,Values='0.0.0.0/0' --query 'SecurityGroups[*].{Name:GroupName}'`
+ssh_access=`aws $profile $region ec2 describe-security-groups --group-id ${sgid} --filters Name=group-name,Values=default Name=ip-permission.protocol,Values=tcp Name=ip-permission.from-port,Values=22 Name=ip-permission.to-port,Values=22 Name=ip-permission.cidr,Values='0.0.0.0/0' --query 'SecurityGroups[*].{Name:GroupName}'`
 if [ "$ssh_access" == "[]" ]; then
 	echo "Explicitly enable ssh access (port 22)"
-	aws --profile $profile ec2 authorize-security-group-ingress \
+	aws $profile $region ec2 authorize-security-group-ingress \
 		--protocol tcp --port 22 --cidr 0.0.0.0/0 \
 		--group-id $sgid
 else
 	echo "SSH Access already exists. Skipping."
 fi
 
-command="aws --profile $profile ec2 run-instances ${dry_run} ${block}
+command="aws $profile $region ec2 run-instances ${dry_run} ${block}
 	--count ${count}
 	--image-id ${image_id}
 	--instance-type ${instance_type}
@@ -313,7 +317,7 @@ echo
 echo "In a moment, an IP address will be assigned."
 echo "Acquire it by running the following command ..."
 echo
-command="aws --profile $profile ec2 describe-instances
+command="aws $profile $region ec2 describe-instances
 	--query 'Reservations[0].Instances[].PublicIpAddress'
 	--instance-ids $instance_ids"
 echo
