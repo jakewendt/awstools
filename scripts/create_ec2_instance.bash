@@ -4,6 +4,8 @@ function usage(){
 	echo
 	echo "Start an EC2 instance on AWS"
 	echo
+	echo "This script REQUIRES the installation of 'jq', a json parser."
+	echo
 	echo "Usage: (NO EQUALS SIGNS)"
 	echo
 	echo "`basename $0` [--profile STRING] [--image-id AMI] [--instance-type AMITYPE] [--key KEY_WITH_PATH] [--user-data USERDATAFILE] [--volume-size INTEGER] [--count INTEGER] [--NOT-DRY-RUN]"
@@ -95,7 +97,37 @@ while [ $# -ne 0 ] ; do
 done
 
 #	Get MY most RECENT, non-WINDOWs AMI image_id
-[ -z "${image_id}" ] && image_id=`aws --profile ${profile} ec2 describe-images --owners self | jq '.Images | sort_by(.CreationDate) | map(select(.Platform != "windows"))[].ImageId' | tail -1 | tr -d '"'`
+if [ -z "${image_id}" ]; then
+	echo "No image id provided."
+	echo "Searching for your most recent non-Windows AMI image id ..."
+	image_id=`aws --profile ${profile} ec2 describe-images --owners self | jq '.Images |
+		sort_by(.CreationDate) |
+		map(select(.Platform != "windows"))[].ImageId' | tail -1 | tr -d '"'`
+	[ -z "${image_id}" ] && echo "None found." || echo "Found $image_id"
+fi
+
+if [ -z "${image_id}" ]; then
+	echo "Did not find an image id of yours."
+	echo "Searching for most recent non-Windows, EBS, HVM, GP2, Amazon AMI ..."
+	image_id=`aws ec2 describe-images --owners amazon | jq '.Images |
+		map(select(.Platform != "windows")) |
+		map(select(.ImageType == "machine")) |
+		map(select(.VirtualizationType == "hvm")) |
+		map(select(.RootDeviceType == "ebs")) |
+		map(select(.Description)) |
+		map(select(.Description | test("^Amazon Linux AMI"))) |
+		map(select((.BlockDeviceMappings | length) == 1)) |
+		map(select(.BlockDeviceMappings[0].Ebs.VolumeType == "gp2")) |
+		sort_by(.CreationDate)[].ImageId' | tail -1 | tr -d '"'`
+	if [ -z "${image_id}" ]; then
+		echo "None found. Surprised. Exiting."
+		exit
+	else
+		echo "Found $image_id"
+	fi
+fi
+
+aws ec2 describe-images --image-id $image_id
 
 
 #       Basically, this is TRUE AND DO ...
