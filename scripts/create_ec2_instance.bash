@@ -118,6 +118,7 @@ if [ -z "${image_id}" ]; then
 		map(select(.Description | test("^Amazon Linux AMI"))) |
 		map(select((.BlockDeviceMappings | length) == 1)) |
 		map(select(.BlockDeviceMappings[0].Ebs.VolumeType == "gp2")) |
+		map(select(.BlockDeviceMappings[0].Ebs.VolumeSize == 8)) |
 		sort_by(.CreationDate)[].ImageId' | tail -1 | tr -d '"'`
 	if [ -z "${image_id}" ]; then
 		echo "None found. Surprised. Exiting."
