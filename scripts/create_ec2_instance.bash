@@ -318,8 +318,8 @@ echo "In a moment, an IP address will be assigned."
 echo "Acquire it by running the following command ..."
 echo
 command="aws $profile $region ec2 describe-instances
-	--query 'Reservations[0].Instances[].PublicIpAddress'
-	--instance-ids $instance_ids"
+	--query 'Reservations[0].Instances[0].PublicIpAddress'
+	--instance-ids $instance_ids | tr -d '\"'"
 echo
 echo $command
 echo
@@ -331,6 +331,14 @@ echo
 echo " ... if using MatLab or other X11 windowing software, you'll need the -X option ..."
 echo
 echo "ssh -X -i ${key} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ec2-user@#.#.#.#"
+echo
+echo "OR "
+echo
+echo -n "ip=\$( "
+echo -n $command
+echo " )"
+echo "echo \$ip"
+echo "ssh -i ${key} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ec2-user@\$ip"
 echo
 
 
