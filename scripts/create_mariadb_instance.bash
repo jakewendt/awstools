@@ -14,7 +14,7 @@ function usage(){
 	echo " password .. "
 	echo " profile ... $profile"
 	echo
-	echo "aws/create_mariadb_instance.bash --username IAmHuman --password ******"
+	echo "create_mariadb_instance.bash --username IAmHuman --password ******"
 	echo "cp awsqueue.cnf ~/.awsqueue.cnf"
 	echo "chmod 400 ~/.awsqueue.cnf"
 	echo "alias awsdb='mysql --defaults-file=~/.awsqueue.cnf'"
@@ -299,4 +299,8 @@ echo "Perhaps, as I do, copy this awsqueue.cnf to ~/.awsqueue.cnf"
 echo "Then, create an alias \"alias awsdb='mysql --defaults-file=~/.awsqueue.cnf'\""
 echo "Then access is as simple as \"awsdb\""
 
+
+#	To cleanup everything
+#	aws rds delete-db-instance --db-instance-identifier queuedbinstanceid --skip-final-snapshot
+#	aws rds delete--db-subnet-group --db-subnet-group-name deletedbsubnetgroupname
 
