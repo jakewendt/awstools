@@ -332,7 +332,7 @@ echo " ... if using MatLab or other X11 windowing software, you'll need the -X o
 echo
 echo "ssh -X -i ${key} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ec2-user@#.#.#.#"
 echo
-echo "OR "
+echo "OR (if just 1 instance)"
 echo
 echo -n "ip=\$( "
 echo -n $command
