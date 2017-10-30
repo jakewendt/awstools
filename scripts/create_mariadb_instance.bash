@@ -126,6 +126,10 @@ echo "Subnet Ids: ${subnet_ids}"
 subnetgroup=`aws --profile $profile rds create-db-subnet-group --db-subnet-group-name ${db_subnet_group_name} --db-subnet-group-description DbSubnetGroupDescription --subnet-ids ${subnet_ids}`
 echo $subnetgroup
 
+#	If exists ...
+#An error occurred (DBSubnetGroupAlreadyExists) when calling the CreateDBSubnetGroup operation: The DB subnet group 'dbsubnetgroupname' already exists.
+#	This is irrelevant as it exists which is desired anyway.
+
 
 aws --profile $profile rds create-db-instance \
 	--publicly-accessible \
