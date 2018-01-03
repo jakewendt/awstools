@@ -81,11 +81,16 @@ fi
 
 #	Basically, don't overwrite the cnf file if a db exists.
 
+#	Use [client] instead of [mysql] so mysqldump also works.
+#	Actually use both differently.
+#	mysqldump doesn't like the database=QueueDbName line in [client]
+
 cat <<-EOF > awsqueue.cnf
 [mysql]
+database=QueueDbName
+[client]
 user=$username
 password=$password
-database=QueueDbName
 port=3306
 host=
 EOF
@@ -304,7 +309,12 @@ echo "Then, create an alias \"alias awsdb='mysql --defaults-file=~/.awsqueue.cnf
 echo "Then access is as simple as \"awsdb\""
 
 
-#	To cleanup everything
+#	To cleanup everything (ASSUMING ONLY 1 DB INSTANCE RUNNING!)
+#	aws rds describe-db-instances --query "DBInstances[].DBInstanceIdentifier"
+#=> queuedbinstanceid
 #	aws rds delete-db-instance --db-instance-identifier queuedbinstanceid --skip-final-snapshot
-#	aws rds delete--db-subnet-group --db-subnet-group-name deletedbsubnetgroupname
+#	aws rds describe-db-subnet-groups --query "DBSubnetGroups[].DBSubnetGroupName"
+#=> dbsubnetgroupname
+#	Can't delete the db subnet group until db instance has been completely deleted.
+#	aws rds delete-db-subnet-group --db-subnet-group-name dbsubnetgroupname
 
