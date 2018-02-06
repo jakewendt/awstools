@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+script_name=$(basename $0)
+
 function usage(){
 	echo
 	echo "Start an EC2 instance on AWS"
@@ -8,7 +10,7 @@ function usage(){
 	echo
 	echo "Usage: (NO EQUALS SIGNS)"
 	echo
-	echo "`basename $0` [--profile STRING] [--region STRING] [--image-id AMI] [--instance-type AMITYPE] [--key KEY_WITH_PATH] [--user-data USERDATAFILE] [--volume-size INTEGER] [--count INTEGER] [--NOT-DRY-RUN]"
+	echo "$script_name [--profile STRING] [--region STRING] [--image-id AMI] [--instance-type AMITYPE] [--key KEY_WITH_PATH] [--user-data USERDATAFILE] [--volume-size INTEGER] [--count INTEGER] [--NOT-DRY-RUN]"
 	echo
 	echo "--NOT-DRY-RUN is a boolean flag to ACTUALLY start instance (without, does not)"
 	echo
@@ -42,7 +44,7 @@ function usage(){
 	echo
 	echo "Example:"
 	echo
-	echo "`basename $0` --key ~/.aws/JakeHuman.pem --user-data aws_start_suicidal_queue.user_data"
+	echo "$script_name --key ~/.aws/JakeHuman.pem --user-data aws_start_suicidal_queue.user_data"
 	echo
 	exit
 }
@@ -104,16 +106,16 @@ done
 if [ -z "${image_id}" ]; then
 	echo "No image id provided."
 	echo "Searching for your most recent non-Windows AMI image id ..."
-	image_id=`aws ${profile} ${region} ec2 describe-images --owners self | jq '.Images |
+	image_id=$(aws ${profile} ${region} ec2 describe-images --owners self | jq '.Images |
 		sort_by(.CreationDate) |
-		map(select(.Platform != "windows"))[].ImageId' | tail -1 | tr -d '"'`
+		map(select(.Platform != "windows"))[].ImageId' | tail -1 | tr -d '"')
 	[ -z "${image_id}" ] && echo "None found." || echo "Found $image_id"
 fi
 
 if [ -z "${image_id}" ]; then
 	echo "Did not find an image id of yours."
 	echo "Searching for most recent non-Windows, EBS, HVM, GP2, Amazon AMI ..."
-	image_id=`aws ${profile} ${region} ec2 describe-images --owners amazon | jq '.Images |
+	image_id=$(aws ${profile} ${region} ec2 describe-images --owners amazon | jq '.Images |
 		map(select(.Platform != "windows")) |
 		map(select(.ImageType == "machine")) |
 		map(select(.VirtualizationType == "hvm")) |
@@ -123,7 +125,7 @@ if [ -z "${image_id}" ]; then
 		map(select((.BlockDeviceMappings | length) == 1)) |
 		map(select(.BlockDeviceMappings[0].Ebs.VolumeType == "gp2")) |
 		map(select(.BlockDeviceMappings[0].Ebs.VolumeSize == 8)) |
-		sort_by(.CreationDate)[].ImageId' | tail -1 | tr -d '"'`
+		sort_by(.CreationDate)[].ImageId' | tail -1 | tr -d '"')
 	if [ -z "${image_id}" ]; then
 		echo "None found. Surprised. Exiting."
 		exit
@@ -151,7 +153,7 @@ key_name=${key_name##*/}	#	drop the longest prefix match to "*/" (the path)
 #	sort by AvailableIpAddressCount?
 
 #	This should return that with the MOST available.
-subnets=`aws $profile $region ec2 describe-subnets`
+subnets=$(aws $profile $region ec2 describe-subnets)
 echo $subnets
 #aws --profile $profile ec2 describe-subnets
 #{
@@ -180,7 +182,7 @@ echo $subnets
 #}
 
 
-subnet_id=`echo $subnets | jq '.Subnets | sort_by(.AvailableIpAddressCount) | reverse[0].SubnetId' | tr -d '"'`
+subnet_id=$(echo $subnets | jq '.Subnets | sort_by(.AvailableIpAddressCount) | reverse[0].SubnetId' | tr -d '"')
 echo $subnet_id
 
 
@@ -260,16 +262,16 @@ echo $subnet_id
 #}
 
 
-vpcid=`aws $profile $region ec2 describe-vpcs --filters "Name=isDefault,Values=true" | jq '.Vpcs[].VpcId' | tr -d '"'`
+vpcid=$(aws $profile $region ec2 describe-vpcs --filters "Name=isDefault,Values=true" | jq '.Vpcs[].VpcId' | tr -d '"')
 
 echo "VPC ID: ${vpcid}"
 
-sg=`aws $profile $region ec2 describe-security-groups --filters "Name=vpc-id,Values=$vpcid,Name=description,Values=default VPC security group"`
-sgid=`echo $sg | jq '.SecurityGroups[].GroupId' | tr -d '"'`
+sg=$(aws $profile $region ec2 describe-security-groups --filters "Name=vpc-id,Values=$vpcid,Name=description,Values=default VPC security group")
+sgid=$(echo $sg | jq '.SecurityGroups[].GroupId' | tr -d '"')
 echo "Security Group Id: ${sgid}"
 
 echo "Checking for existing ssh access"
-ssh_access=`aws $profile $region ec2 describe-security-groups --group-id ${sgid} --filters Name=group-name,Values=default Name=ip-permission.protocol,Values=tcp Name=ip-permission.from-port,Values=22 Name=ip-permission.to-port,Values=22 Name=ip-permission.cidr,Values='0.0.0.0/0' --query 'SecurityGroups[*].{Name:GroupName}'`
+ssh_access=$(aws $profile $region ec2 describe-security-groups --group-id ${sgid} --filters Name=group-name,Values=default Name=ip-permission.protocol,Values=tcp Name=ip-permission.from-port,Values=22 Name=ip-permission.to-port,Values=22 Name=ip-permission.cidr,Values='0.0.0.0/0' --query 'SecurityGroups[*].{Name:GroupName}')
 if [ "$ssh_access" == "[]" ]; then
 	echo "Explicitly enable ssh access (port 22)"
 	aws $profile $region ec2 authorize-security-group-ingress \
@@ -298,10 +300,10 @@ command="aws $profile $region ec2 run-instances ${dry_run} ${block}
 
 #	Double quotes preserve newlines (if they weren't escaped)
 echo "$command"
-instance=`$command`
+instance=$($command)
 echo "$instance"
 
-instance_ids=`echo "$instance" | jq '.Instances[].InstanceId' | tr -d '"'`
+instance_ids=$(echo "$instance" | jq '.Instances[].InstanceId' | tr -d '"')
 echo $instance_ids
 
 
@@ -349,7 +351,7 @@ echo
 
 #	rather than [] suffix, use map(select()) so output is an array.
 
-#	images=`aws --profile $profile ec2 describe-images`
+#	images=$(aws --profile $profile ec2 describe-images)
 #$ echo $images | jq '.Images[] | length'
 #66401
 #$ echo $images | jq '.Images | map(select( .VirtualizationType == "hvm" )) | length'
@@ -363,10 +365,10 @@ echo
 
 
 #	Rather than jq, can also use python to pick from json
-#		line=`echo $message | python -c \
-#			'import sys, json; print json.load(sys.stdin)["Messages"][0]["Body"]'`
+#		line=$(echo $message | python -c \
+#			'import sys, json; print json.load(sys.stdin)["Messages"][0]["Body"]')
 #		echo $line
 #
-#		handle=`echo $message | python -c \
-#			'import sys, json; print json.load(sys.stdin)["Messages"][0]["ReceiptHandle"]'`
+#		handle=$(echo $message | python -c \
+#			'import sys, json; print json.load(sys.stdin)["Messages"][0]["ReceiptHandle"]')
 #		echo $handle

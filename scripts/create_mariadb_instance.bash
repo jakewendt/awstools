@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 
+script_name=$(basename $0)
+
 function usage(){
 	echo
 	echo "Start a MariaDB instance on AWS"
 	echo
 	echo "Usage: (NO EQUALS SIGNS)"
 	echo
-	echo "`basename $0` --password PASSWORD [--username USERNAME] [--profile STRING]"
+	echo "$script_name --password PASSWORD [--username USERNAME] [--profile STRING]"
 	echo
 	echo "Defaults:"
 	echo
@@ -60,7 +62,7 @@ db_instance_identifier='QueueDbInstanceId'
 
 #	Check if database with this id exists already.
 #	Basically
-#if [ `aws --profile $profile rds describe-db-instances | jq '.DBInstances | select(.DBInstanceIdentifier == "${db_instance_identifier}") | length'` -gt 0 ] ; then
+#if [ $(aws --profile $profile rds describe-db-instances | jq '.DBInstances | select(.DBInstanceIdentifier == "${db_instance_identifier}") | length') -gt 0 ] ; then
 #	echo -e "You've already got a Queue DB setup. You probably don't want to do this.\n"
 #	exit
 #fi
@@ -71,7 +73,7 @@ db_instance_identifier='QueueDbInstanceId'
 
 #	If not found, the following will be printed on the STDERR. I don't need it, so to dev null.
 #	A client error (DBInstanceNotFound) occurred when calling the DescribeDBInstances operation: DBInstance QueueDbInstanceId not found.
-qdbi=`aws --profile $profile rds describe-db-instances --db-instance-identifier ${db_instance_identifier} 1> /dev/null 2>&1`
+qdbi=$(aws --profile $profile rds describe-db-instances --db-instance-identifier ${db_instance_identifier} 1> /dev/null 2>&1)
 #	qdbi should be blank, so storing it is unnecessary.
 status=$? 	#	0 when it exists, 255 when it doesn't
 if [ $status -eq 0 ] ; then
@@ -97,13 +99,13 @@ EOF
 chmod 600 awsqueue.cnf
 
 
-vpcid=`aws --profile $profile ec2 describe-vpcs --filters "Name=isDefault,Values=true" | jq '.Vpcs[].VpcId' | tr -d '"'`
+vpcid=$(aws --profile $profile ec2 describe-vpcs --filters "Name=isDefault,Values=true" | jq '.Vpcs[].VpcId' | tr -d '"')
 
 echo "VPC ID: ${vpcid}"
 
-sg=`aws --profile $profile ec2 describe-security-groups --filters "Name=vpc-id,Values=$vpcid,Name=description,Values=default VPC security group"`
+sg=$(aws --profile $profile ec2 describe-security-groups --filters "Name=vpc-id,Values=$vpcid,Name=description,Values=default VPC security group")
 #echo "Security Group: ${sg}"
-sgid=`echo $sg | jq '.SecurityGroups[].GroupId' | tr -d '"'`
+sgid=$(echo $sg | jq '.SecurityGroups[].GroupId' | tr -d '"')
 echo "Security Group Id: ${sgid}"
 
 #echo "Explicitly enable ssh access (port 22)"
@@ -112,7 +114,7 @@ echo "Security Group Id: ${sgid}"
 #	--group-id $sgid
 
 echo "Checking for existing external access"
-ext_access=`aws --profile $profile ec2 describe-security-groups --group-id ${sgid} --filters Name=group-name,Values=default Name=ip-permission.protocol,Values=tcp Name=ip-permission.from-port,Values=3306 Name=ip-permission.to-port,Values=3306 Name=ip-permission.cidr,Values='0.0.0.0/0' --query 'SecurityGroups[*].{Name:GroupName}'`
+ext_access=$(aws --profile $profile ec2 describe-security-groups --group-id ${sgid} --filters Name=group-name,Values=default Name=ip-permission.protocol,Values=tcp Name=ip-permission.from-port,Values=3306 Name=ip-permission.to-port,Values=3306 Name=ip-permission.cidr,Values='0.0.0.0/0' --query 'SecurityGroups[*].{Name:GroupName}')
 
 if [ "$ext_access" == "[]" ]; then
 	echo "Explicitly enable mysql/mariadb access (port 3306)"
@@ -125,10 +127,10 @@ fi
 
 db_subnet_group_name='DbSubnetGroupName'
 
-subnet_ids=`aws --profile $profile ec2 describe-subnets | jq '.Subnets[].SubnetId' | paste -s -d' ' | tr -d '"'`
+subnet_ids=$(aws --profile $profile ec2 describe-subnets | jq '.Subnets[].SubnetId' | paste -s -d' ' | tr -d '"')
 echo "Subnet Ids: ${subnet_ids}"
 
-subnetgroup=`aws --profile $profile rds create-db-subnet-group --db-subnet-group-name ${db_subnet_group_name} --db-subnet-group-description DbSubnetGroupDescription --subnet-ids ${subnet_ids}`
+subnetgroup=$(aws --profile $profile rds create-db-subnet-group --db-subnet-group-name ${db_subnet_group_name} --db-subnet-group-description DbSubnetGroupDescription --subnet-ids ${subnet_ids})
 echo $subnetgroup
 
 #	If exists ...
