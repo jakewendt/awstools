@@ -21,11 +21,13 @@ function usage(){
 	echo
 	echo "Is there a max size limit?"
 	echo
+	echo "Requires an AWS Direct Connection or VPN or something"
+	echo
 	exit
 }
 
 
-#usage
+usage
 
 
 
@@ -57,7 +59,14 @@ echo "FSID : ${fsid}"
 
 #	something still missing
 
+#	Seems to require something on a different level. Can't do this.
+
 #	https://aws.amazon.com/directconnect/
+
+#	aws directconnect create-connection
+#	--location <value>
+#	--bandwidth <value>
+#	--connection-name <value>
 
 
 
