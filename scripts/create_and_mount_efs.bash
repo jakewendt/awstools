@@ -6,16 +6,28 @@ function usage(){
 	echo
 	echo "Create an AWS EFS and mount locally (linux only)"
 	echo
-	echo
+	echo "https://aws.amazon.com/blogs/aws/amazon-elastic-file-system-shared-file-storage-for-amazon-ec2/"
 	echo "https://docs.aws.amazon.com/efs/latest/ug/efs-onpremises.html"
 	echo
 	echo "sudo apt install nfs-common"
+	echo
+	echo "Glacier - ~0.004 / GB / Month"
+	echo "S3  - ~0.023 / GB / Month"
+	echo "EBS - ~0.100 / GB / Month"
+	echo "EFS - ~0.300 / GB / Month"
+	echo
+	echo "Yep, more expensive, but if works, nice single flexible solution for varying needs"
+	echo "like work spaces on large files"
+	echo
+	echo "Is there a max size limit?"
+	echo
+	echo "Requires an AWS Direct Connection or VPN or something"
 	echo
 	exit
 }
 
 
-#usage
+usage
 
 
 
@@ -47,6 +59,14 @@ echo "FSID : ${fsid}"
 
 #	something still missing
 
+#	Seems to require something on a different level. Can't do this.
+
+#	https://aws.amazon.com/directconnect/
+
+#	aws directconnect create-connection
+#	--location <value>
+#	--bandwidth <value>
+#	--connection-name <value>
 
 
 
