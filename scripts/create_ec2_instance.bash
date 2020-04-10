@@ -266,7 +266,8 @@ vpcid=$(aws $profile $region ec2 describe-vpcs --filters "Name=isDefault,Values=
 
 echo "VPC ID: ${vpcid}"
 
-sg=$(aws $profile $region ec2 describe-security-groups --filters "Name=vpc-id,Values=$vpcid,Name=description,Values=default VPC security group")
+#sg=$(aws $profile $region ec2 describe-security-groups --filters "Name=vpc-id,Values=$vpcid,Name=description,Values=default VPC security group")
+sg=$(aws $profile $region ec2 describe-security-groups --filters Name=vpc-id,Values=$vpcid Name=group-name,Values=default)
 sgid=$(echo $sg | jq '.SecurityGroups[].GroupId' | tr -d '"')
 echo "Security Group Id: ${sgid}"
 
